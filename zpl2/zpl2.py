@@ -14,6 +14,11 @@ class Zpl2(list):
     ORIENTATION_INVERTED = 'I'
     ORIENTATION_BOTTOMUP = 'B'
 
+    JUSTITIFACTION_LEFT = 'L'
+    JUSTITIFACTION_CENTER = 'C'
+    JUSTITIFACTION_RIGHT = 'R'
+    JUSTITIFACTION_JUSTIFIED = 'J'
+
     def __init__(self, firmware='unknown'):
         self.firmware = firmware
         self.delimiter = b','
@@ -100,11 +105,19 @@ class Zpl2(list):
     def getAllBytes(self):
         return b"".join(self)
 
-    def printText(self, x, y, width, height, text, font="0",
-                  orientation=ORIENTATION_NORMAL, encoding='cp850'):
-        self.FieldOrigin(0, 0)
-        self.FieldTypeset(x, y)
-        self.ScalableBitmappedFont(font, orientation, height, width)
+    def printText(self, x, y, width, fontWidth, fontHeight, text, font='0',
+                  orientation=ORIENTATION_NORMAL, encoding='cp850',
+                  maximumNumberOfLines=1, trimLineSpace=0,
+                  textJustification='L', hangingIndent=0):
+        self.FieldOrigin(x, y)
+#        self.FieldTypeset(x, y)
+        self.FieldBlock(
+            width,
+            maximumNumberOfLines,
+            trimLineSpace,
+            textJustification,
+            hangingIndent)
+        self.ScalableBitmappedFont(font, orientation, fontHeight, fontWidth)
         self.FieldData(text.encode(encoding))
         self.FieldSeparator()
 
@@ -229,6 +242,35 @@ class Zpl2(list):
 
         self.appendCommand(self.FORMAT_COMMAND, "CI", characterSet)
 
+    def FieldBlock(self, width, maximumNumberOfLines=1, trimLineSpace=0,
+                   textJustification='L', hangingIndent=0):
+        if ((not isinstance(width, int)) or
+                (not isinstance(maximumNumberOfLines, int)) or
+                (not isinstance(trimLineSpace, int)) or
+                (not isinstance(textJustification, str)) or
+                (not isinstance(hangingIndent, int))):
+            raise TypeError
+        if (maximumNumberOfLines < 1) or (maximumNumberOfLines > 9999):
+            raise ValueError
+        if (trimLineSpace < -9999) or (trimLineSpace > 9999):
+            raise ValueError
+        if (not re.match(r'^[LCRJ]$', textJustification)):
+            raise ValueError
+        if (hangingIndent < 0) or (hangingIndent > 9999):
+            raise ValueError
+
+        self.appendCommand(self.FORMAT_COMMAND, "FB", width,
+                           maximumNumberOfLines, trimLineSpace,
+                           textJustification, hangingIndent)
+
+    def FieldData(self, data):
+        if (not isinstance(data, str)) and (not isinstance(data, bytes)):
+            raise TypeError
+        if len(data) > 3072:
+            raise ValueError
+
+        self.appendCommand(self.FORMAT_COMMAND, "FD", data)
+
     def FieldOrigin(self, x=0, y=0, z=0):
         if (not isinstance(x, int)) or (
                 not isinstance(y, int)) or (not isinstance(z, int)):
@@ -260,14 +302,6 @@ class Zpl2(list):
             self.appendCommand(self.FORMAT_COMMAND, "FT", x, y, z)
         else:
             self.appendCommand(self.FORMAT_COMMAND, "FT", x, y)
-
-    def FieldData(self, data):
-        if (not isinstance(data, str)) and (not isinstance(data, bytes)):
-            raise TypeError
-        if len(data) > 3072:
-            raise ValueError
-
-        self.appendCommand(self.FORMAT_COMMAND, "FD", data)
 
     def FieldSeparator(self):
         self.appendCommand(self.FORMAT_COMMAND, "FS")
