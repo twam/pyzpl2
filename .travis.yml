@@ -1,0 +1,22 @@
+sudo: false
+
+language: python
+
+python:
+  - "3.3"
+  - "3.4"
+  - "3.5"
+
+install:
+  - pip install --upgrade pip
+  - pip install coveralls
+  - pip install autopep8
+
+script:
+  # Run all unit tests
+  - coverage run --source=. --omit="*/test*.py" --branch -m unittest discover
+  # Check for formatting corresponding to PEP8
+  - autopep=$(autopep8 -dr .); [[ -z $autopep ]];
+
+after_success:
+  coveralls
