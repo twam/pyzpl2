@@ -1,2 +1,4 @@
 *.pyc
 .coverage
+dist/
+pyzpl2.egg-info/
