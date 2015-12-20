@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from setuptools import setup, find_packages
 from codecs import open
 
@@ -32,5 +34,4 @@ setup(
         'test': ['coverage'],
     },
     platforms='any',
-    download_url='https://github.com/twam/pyzpl2/tarball/0.1',
 )
