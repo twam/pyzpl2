@@ -94,6 +94,32 @@ class ZPLTests(unittest.TestCase):
         self.zpl.FieldOrigin(1, 2, 1)
         self.assertEqual(self.zpl, [b'^FO1,2,1'])
 
+    def testGraphicFieldAsciiDataNoOptimizeAscii(self):
+        data = b'\x12\x34\x56\x78\x90\xAA\x55\xAA\x55\xAA\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.zpl.GraphicField(
+            'A',
+            len(data),
+            len(data),
+            5,
+            data,
+            optimizeAscii=False)
+        self.assertEqual(
+            self.zpl,
+            [b'^GFA,20,20,5,1234567890aa55aa55aaffff0000000000000000'])
+
+    def testGraphicFieldAsciiDataOptimizeAscii(self):
+        data = b'\x12\x34\x56\x78\x90\xAA\x55\xAA\x55\xAA\xFF\xFF\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.zpl.GraphicField(
+            'A',
+            len(data),
+            len(data),
+            5,
+            data,
+            optimizeAscii=True)
+        self.assertEqual(
+            self.zpl,
+            [b'^GFA,20,20,5,1234567890aa55aa55aaffff,00,'])
+
     def testStartFormat(self):
         self.zpl.StartFormat()
         self.assertEqual(self.zpl, [b'^XA'])

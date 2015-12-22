@@ -25,7 +25,7 @@ class Zpl2(list):
         self.tilde = b'~'
         self.caret = b'^'
 
-    def append(self, item, encoding='utf_8'):
+    def append(self, item, encoding='ascii'):
         if isinstance(item, str):
             item = item.encode(encoding)
         super(Zpl2, self).append(item)
@@ -54,7 +54,7 @@ class Zpl2(list):
                 data = data + arg.encode('ascii')
             elif (isinstance(arg, int)):
                 data = data + str(arg).encode('ascii')
-            elif (isinstance(arg, bytes)):
+            elif (isinstance(arg, bytes)) or (isinstance(arg, bytearray)):
                 data = data + arg
             else:
                 raise Exception("Not supported type")
@@ -327,6 +327,59 @@ class Zpl2(list):
         self.appendCommand(self.FORMAT_COMMAND, "GB", w,
                            h, thickness, color, rounding)
 
+    def GraphicField(self, compressionType, binaryByteCount,
+                     graphicFieldCount, bytesPerRow, data, optimizeAscii=True):
+        if ((not isinstance(compressionType, str)) or
+                (not isinstance(binaryByteCount, int)) or
+                (not isinstance(graphicFieldCount, int)) or
+                (not isinstance(bytesPerRow, int)) or
+                (not isinstance(data, bytes) and not isinstance(data, bytearray))):
+            raise TypeError
+        if not re.match('^[ABC]$', compressionType):
+            raise ValueError
+        if (binaryByteCount < 1):  # or (binaryByteCount > 99999):
+            raise ValueError
+        if (graphicFieldCount < 1):  # or (graphicFieldCount > 99999):
+            raise ValueError
+        if (bytesPerRow < 1):  # or (bytesPerRow > 99999):
+            raise ValueError
+        if (len(data) != binaryByteCount):
+            raise ValueError
+
+        if compressionType == 'C' or compressionType == 'B':
+            raise Exception('Compression type not implemented.')
+
+        if compressionType == 'A':
+            if optimizeAscii:
+                dataArgument = bytearray()
+                lines = [data[i:i + bytesPerRow]
+                         for i in range(0, len(data), bytesPerRow)]
+                for line in lines:
+                    lastNonZero = bytesPerRow - 1
+                    while (lastNonZero > 0):
+                        if line[lastNonZero] == 0:
+                            lastNonZero -= 1
+                        else:
+                            break
+
+                    dataArgument.extend(
+                        line[
+                            0:lastNonZero +
+                            1].hex().encode('ascii'))
+                    if (lastNonZero < bytesPerRow - 1):
+                        dataArgument.extend(b',')
+            else:
+                dataArgument = data.hex()
+
+        self.appendCommand(
+            self.FORMAT_COMMAND,
+            "GF",
+            compressionType,
+            binaryByteCount,
+            graphicFieldCount,
+            bytesPerRow,
+            dataArgument)
+
     def ConfigurationUpdate(self, configuration):
         if (not isinstance(configuration, str)):
             raise TypeError
@@ -345,6 +398,14 @@ class Zpl2(list):
 
         self.appendCommand(self.FORMAT_COMMAND, "LH", x, y)
 
+    def LabelLength(self, x):
+        if (not isinstance(x, int)):
+            raise TypeError
+        if (x < 1) or (x > 32000):
+            raise ValueError
+
+        self.appendCommand(self.FORMAT_COMMAND, "LL", x)
+
     def LabelTop(self, x):
         if (not isinstance(x, int)):
             raise TypeError
@@ -360,6 +421,14 @@ class Zpl2(list):
             raise ValueError
 
         self.appendCommand(self.FORMAT_COMMAND, "PW", labelWidth)
+
+    def SetDarkness(self, darkness):
+        if (not isinstance(darkness, int)):
+            raise TypeError
+        if (darkness < 0) and (darkness > 30):
+            raise ValueError
+
+        self.appendCommand(self.CONTROL_COMMAND, "SD", ('%02u' % darkness))
 
     def MediaType(self, mediaType):
         if (mediaType != "T") and (mediaType != "D"):
