@@ -190,7 +190,7 @@ class Zpl2(list):
     def ChangeCaret(self, caret='^'):
         if (not isinstance(caret, str)):
             raise TypeError
-        if (len(caret) > 1) or (caret.encode("ascii")[0] > 127):
+        if (len(caret) > 1) or (ord(caret) > 127):
             raise ValueError
 
         self.appendCommand(self.FORMAT_COMMAND, "CC", caret)
@@ -200,7 +200,7 @@ class Zpl2(list):
     def ChangeDelimiter(self, delimiter=','):
         if (not isinstance(delimiter, str)):
             raise TypeError
-        if (len(delimiter) > 1) or (delimiter.encode("ascii")[0] > 127):
+        if (len(delimiter) > 1) or (ord(delimiter) > 127):
             raise ValueError
 
         self.delimiter = delimiter.encode('ascii')
@@ -209,7 +209,7 @@ class Zpl2(list):
     def ChangeTilde(self, tilde='~'):
         if (not isinstance(tilde, str)):
             raise TypeError
-        if (len(tilde) > 1) or (tilde.encode("ascii")[0] > 127):
+        if (len(tilde) > 1) or (ord(tilde) > 127):
             raise ValueError
 
         self.tilde = tilde.encode('ascii')

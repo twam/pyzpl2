@@ -128,6 +128,11 @@ class ZPLTests(unittest.TestCase):
         self.zpl.EndFormat()
         self.assertEqual(self.zpl, [b'^XZ'])
 
+    def testChangeCaretErr(self):
+        self.zpl.StartFormat()
+        with self.assertRaises(ValueError):
+            self.zpl.ChangeCaret(chr(240))
+
     def testChangeCaret(self):
         self.zpl.StartFormat()
         self.zpl.ChangeCaret('x')
@@ -138,3 +143,7 @@ class ZPLTests(unittest.TestCase):
         self.zpl.ChangeDelimiter(';')
         self.zpl.FieldOrigin(1, 2)
         self.assertEqual(self.zpl.getAllBytes(), b'^CD;^FO1;2')
+
+
+if __name__=='__main__':
+    unittest.main()
