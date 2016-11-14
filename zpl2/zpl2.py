@@ -352,21 +352,12 @@ class Zpl2(list):
         if compressionType == 'A':
             if optimizeAscii:
                 dataArgument = bytearray()
-                lines = [data[i:i + bytesPerRow]
-                         for i in range(0, len(data), bytesPerRow)]
+                lines = (data[i:i + bytesPerRow]
+                         for i in range(0, len(data), bytesPerRow))
                 for line in lines:
-                    lastNonZero = bytesPerRow - 1
-                    while (lastNonZero > 0):
-                        if line[lastNonZero] == 0:
-                            lastNonZero -= 1
-                        else:
-                            break
-
-                    dataArgument.extend(
-                        line[
-                            0:lastNonZero +
-                            1].hex().encode('ascii'))
-                    if (lastNonZero < bytesPerRow - 1):
+                    line = line.rstrip(b'\0') or b'\0'
+                    dataArgument.extend(line.hex().encode('ascii'))
+                    if (len(line) < bytesPerRow):
                         dataArgument.extend(b',')
             else:
                 dataArgument = data.hex()
