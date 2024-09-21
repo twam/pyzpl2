@@ -126,12 +126,19 @@ class Zpl2(list):
                                columns=0, rows=0):
         self.FieldOrigin(x, y)
         self.DataMatrixBarCode(orientation, height, quality, columns, rows)
-        self.FieldData(data.encode('cp850'))
+        self.FieldData(data)
         self.FieldSeparator()
 
-    def printBox(self, x, y, width, height, thickness=1):
+    def printQRBarCode(self, x, y, data,
+                               model=2, magnificationFactor=3, errorCorrection = 'Q', maskValue = 7):
         self.FieldOrigin(x, y)
-        self.GraphicBox(width, height, thickness)
+        self.QRCodeBarCode(model, magnificationFactor, errorCorrection, maskValue)
+        self.FieldData(data)
+        self.FieldSeparator()
+
+    def printBox(self, x, y, width, height, thickness=1, rounding = 0):
+        self.FieldOrigin(x=x, y=y)
+        self.GraphicBox(width=width, height=height, thickness=thickness, rounding=rounding)
         self.FieldSeparator()
 
     def ScalableBitmappedFont(self, font, orientation, h, w):
@@ -150,6 +157,24 @@ class Zpl2(list):
             raise ValueError
 
         self.appendCommand(self.FORMAT_COMMAND, "A" + font, orientation, h, w)
+
+    def QRCodeBarCode(self, model=2, magnificationFactor=3, errorCorrection = 'Q', maskValue = 7):
+        if ((not isinstance(model, int)) or
+            (not isinstance(magnificationFactor, int)) or
+            (not isinstance(errorCorrection, str)) or
+            (not isinstance(maskValue, int))):
+            raise TypeError
+        if (model < 1) or (model > 2):
+            raise ValueError
+        if (magnificationFactor < 1) or (magnificationFactor > 10):
+            raise ValueError
+        if not re.match(r'^[HQML]$', errorCorrection):
+            raise ValueError
+        if (maskValue < 0) or (maskValue >  7):
+            raise ValueError
+
+        self.appendCommand(self.FORMAT_COMMAND, "BQ", "N", model, 
+            magnificationFactor, errorCorrection, maskValue)
 
     def DataMatrixBarCode(self, orientation, height, quality, columns, rows,
                           formatId=6, escapeCharacter='~', aspectRatio=1):
@@ -306,26 +331,26 @@ class Zpl2(list):
     def FieldSeparator(self):
         self.appendCommand(self.FORMAT_COMMAND, "FS")
 
-    def GraphicBox(self, w, h, thickness=1, color='B', rounding=0):
-        if ((not isinstance(w, int)) or
-                (not isinstance(h, int)) or
+    def GraphicBox(self, width, height, thickness=1, color='B', rounding=0):
+        if ((not isinstance(width, int)) or
+                (not isinstance(height, int)) or
                 (not isinstance(thickness, int)) or
                 (not isinstance(color, str)) or
                 (not isinstance(rounding, int))):
             raise TypeError
         if (thickness < 1) or (thickness > 32000):
             raise ValueError
-        if (w < thickness) or (w > 32000):
+        if (width < thickness) or (width > 32000):
             raise ValueError
-        if (h < thickness) or (h > 32000):
+        if (height < thickness) or (height > 32000):
             raise ValueError
         if not re.match(r'^[BW]$', color):
             raise ValueError
         if (rounding < 0) or (rounding > 8):
             raise ValueError
 
-        self.appendCommand(self.FORMAT_COMMAND, "GB", w,
-                           h, thickness, color, rounding)
+        self.appendCommand(self.FORMAT_COMMAND, "GB", width,
+                           height, thickness, color, rounding)
 
     def GraphicField(self, compressionType, binaryByteCount,
                      graphicFieldCount, bytesPerRow, data, optimizeAscii=True):
@@ -346,9 +371,6 @@ class Zpl2(list):
         if (len(data) != binaryByteCount):
             raise ValueError
 
-        if compressionType == 'C' or compressionType == 'B':
-            raise Exception('Compression type not implemented.')
-
         if compressionType == 'A':
             if optimizeAscii:
                 dataArgument = bytearray()
@@ -361,6 +383,10 @@ class Zpl2(list):
                         dataArgument.extend(b',')
             else:
                 dataArgument = data.hex()
+        elif compressionType == 'B':
+            raise Exception('Compression type not implemented.')
+        else: # compressionType == 'C':
+            raise Exception('Compression type not implemented.')
 
         self.appendCommand(
             self.FORMAT_COMMAND,
