@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "pyzpl2"
+version = "0.0.0"
+description = "ZPL II'"
+authors = ["Tobias Müller <Tobias_Mueller@twam.info>"]
+readme = "README.md"
+license = "MIT"
+
+packages = [
+	{ include = "zpl2" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+pattern = "^(?P<base>\\d+\\.\\d+\\.\\d+)$"
